@@ -1,0 +1,236 @@
+
+{
+  "info": {
+    "name": "BrightCore Step 06 - Dashboard and Audit",
+    "description": "Tests admin dashboard statistics, application listing, application status history, and audit events.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000"
+    },
+    {
+      "key": "adminEmail",
+      "value": "REPLACE_WITH_YOUR_ADMIN_EMAIL"
+    },
+    {
+      "key": "adminPassword",
+      "value": "REPLACE_WITH_YOUR_ADMIN_PASSWORD"
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "applicationId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Admin Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+        },
+        "url": "{{baseUrl}}/api/v1/auth/login"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Admin login succeeds', function () { pm.response.to.have.status(200); });",
+              "const body = pm.response.json();",
+              "pm.expect(body.access_token).to.be.a('string').and.not.empty;",
+              "pm.collectionVariables.set('adminToken', body.access_token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Dashboard Summary",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/admin/dashboard/summary"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Dashboard returns 200', function () { pm.response.to.have.status(200); });",
+              "const body = pm.response.json();",
+              "['published_jobs','total_applications','pending_reviews','accepted_applications','rejected_applications'].forEach(function (key) { pm.expect(body[key], key).to.be.a('number'); pm.expect(body[key]).to.be.at.least(0); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - List Applications and Save First ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/admin/applications?page=1&page_size=20"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Application listing returns 200', function () { pm.response.to.have.status(200); });",
+              "const body = pm.response.json();",
+              "pm.expect(body.items).to.be.an('array');",
+              "if (body.items.length > 0) { pm.collectionVariables.set('applicationId', body.items[0].id); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Application Status History",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/admin/applications/{{applicationId}}/history"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Application history returns 200', function () { pm.response.to.have.status(200); });",
+              "const body = pm.response.json();",
+              "pm.expect(body).to.be.an('array');",
+              "if (body.length > 0) { pm.expect(body[0]).to.have.property('new_status'); pm.expect(body[0]).to.have.property('changed_at'); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Audit Events",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/admin/audit-events?page=1&page_size=20"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Audit events return 200', function () { pm.response.to.have.status(200); });",
+              "const body = pm.response.json();",
+              "pm.expect(body.items).to.be.an('array');",
+              "pm.expect(body.total).to.be.a('number');",
+              "pm.expect(body.pages).to.be.a('number');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - Filter Status Change Audit Events",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/admin/audit-events?page=1&page_size=20&action=APPLICATION_STATUS_CHANGED"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Filtered audit events return 200', function () { pm.response.to.have.status(200); });",
+              "const body = pm.response.json();",
+              "pm.expect(body.items).to.be.an('array');",
+              "body.items.forEach(function (item) { pm.expect(item.action).to.eql('APPLICATION_STATUS_CHANGED'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 - Dashboard Rejects Missing Token",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/v1/admin/dashboard/summary"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Dashboard requires authentication', function () { pm.expect([401,403]).to.include(pm.response.code); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 - Audit Endpoint Rejects Missing Token",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/v1/admin/audit-events"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Audit endpoint requires authentication', function () { pm.expect([401,403]).to.include(pm.response.code); });"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -73,21 +73,36 @@ def get_admin_application(
     return application
 
 
-@router.patch(
-    "/{application_id}/status",
-    response_model=ApplicationPublic,
-)
+# @router.patch(
+#     "/{application_id}/status",
+#     response_model=ApplicationPublic,
+# )
+# def change_application_status(
+#     application_id: uuid.UUID,
+#     payload: ApplicationStatusUpdate,
+#     db: Session = Depends(get_db),
+#     _: User = Depends(require_admin),
+# ) -> ApplicationPublic:
+#     return update_application_status(
+#         db,
+#         application_id,
+#         payload.status,
+#         payload.note,
+#     )
+
+@router.patch("/{application_id}/status", response_model=ApplicationPublic)
 def change_application_status(
     application_id: uuid.UUID,
     payload: ApplicationStatusUpdate,
     db: Session = Depends(get_db),
-    _: User = Depends(require_admin),
-) -> ApplicationPublic:
+    admin: User = Depends(require_admin),
+):
     return update_application_status(
-        db,
-        application_id,
-        payload.status,
-        payload.note,
+        db=db,
+        application_id=application_id,
+        new_status=payload.status,
+        note=payload.note,
+        actor_id=admin.id,
     )
 
 

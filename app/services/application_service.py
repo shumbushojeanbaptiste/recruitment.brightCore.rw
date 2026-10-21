@@ -10,6 +10,15 @@ from app.repositories import application_repository, job_repository
 from app.services.cv_storage import delete_cv, store_cv
 from app.services.job_service import utc_now
 
+from fastapi import HTTPException
+from sqlalchemy.orm import Session
+from app.models.application_status_history import ApplicationStatusHistory
+from app.models.audit_event import AuditEvent
+from app.services.notification_service import (
+    log_application_status_notification,
+)
+
+
 
 async def submit_application(
     db: Session,
@@ -82,11 +91,13 @@ async def submit_application(
         raise
 
 
+
 def update_application_status(
     db: Session,
-    application_id: uuid.UUID,
+    application_id,
     new_status: str,
     note: str | None,
+    actor_id,
 ) -> Application:
     application = application_repository.get_by_id(
         db, application_id
@@ -98,14 +109,67 @@ def update_application_status(
             detail="Application not found",
         )
 
-    if application.status in ("accepted", "rejected"):
-        if application.status != new_status:
-            raise HTTPException(
-                status_code=409,
-                detail="A final application decision cannot be changed",
+    previous_status = application.status
+
+    # Repeating the same status is harmless and creates no duplicate history.
+    if previous_status == new_status:
+        return application
+
+    # Accepted and rejected are final decisions in this workflow.
+    if previous_status in ("accepted", "rejected"):
+        raise HTTPException(
+            status_code=409,
+            detail="A final application decision cannot be changed",
+        )
+
+    try:
+        application.status = new_status
+        application.status_note = note
+
+        db.add(
+            ApplicationStatusHistory(
+                application_id=application.id,
+                previous_status=previous_status,
+                new_status=new_status,
+                note=note,
+                changed_by=actor_id,
             )
+        )
 
-    application.status = new_status
-    application.status_note = note
+        db.add(
+            AuditEvent(
+                actor_id=actor_id,
+                action="APPLICATION_STATUS_CHANGED",
+                resource_type="application",
+                resource_id=str(application.id),
+                details={
+                    "previous_status": previous_status,
+                    "new_status": new_status,
+                },
+            )
+        )
 
-    return application_repository.save(db, application)
+        # All database changes are committed together.
+        db.commit()
+        db.refresh(application)
+
+    except Exception:
+        db.rollback()
+        raise
+
+    # Notification logging is deliberately outside the database transaction.
+    # Failure to log a notification must not undo a valid status change.
+    try:
+        log_application_status_notification(
+            application_id=application.id,
+            recipient_email=application.email,
+            status=application.status,
+            note=application.status_note,
+        )
+    except Exception:
+        import logging
+        logging.getLogger(__name__).exception(
+            "Failed to log application status notification"
+        )
+
+    return application

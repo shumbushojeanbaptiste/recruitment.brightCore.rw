@@ -1,0 +1,111 @@
+
+{
+  "info": {
+    "name": "BrightCore Recruitment - Step 02 Database",
+    "description": "Step 02 regression checks for API startup and database infrastructure readiness.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 - API Root",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Returns HTTP 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('API identifies itself', function () {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.status).to.eql('running');",
+              "  pm.expect(body.name).to.eql('BrightCore Recruitment API');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Liveness",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/health/live",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Returns HTTP 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Process is alive', function () {",
+              "  pm.expect(pm.response.json().status).to.eql('alive');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Dependency Readiness",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/health/ready",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('PostgreSQL and Redis are ready', function () { pm.response.to.have.status(200); });",
+              "pm.test('Readiness response is correct', function () {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.status).to.eql('ready');",
+              "  pm.expect(body.postgres).to.eql('ok');",
+              "  pm.expect(body.redis).to.eql('ok');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - OpenAPI Schema",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/openapi.json",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Returns HTTP 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('OpenAPI document is available', function () {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.openapi).to.be.a('string');",
+              "  pm.expect(body.info.title).to.eql('BrightCore Recruitment API');",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000"
+    }
+  ]
+}

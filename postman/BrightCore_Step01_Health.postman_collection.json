@@ -1,0 +1,87 @@
+{
+  "info": {
+    "_postman_id": "8e3c8102-6f2a-4a45-9d15-2d5f5e6c1001",
+    "name": "BrightCore Recruitment - Step 01 Health",
+    "description": "Step 01 smoke tests for API process, PostgreSQL, and Redis readiness.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - API Root",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('API is running', function () {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.status).to.eql('running');",
+              "  pm.expect(body.name).to.eql('BrightCore Recruitment API');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Liveness",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/health/live"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Process is alive', function () {",
+              "  pm.expect(pm.response.json().status).to.eql('alive');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Readiness (PostgreSQL + Redis)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/health/ready"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Dependencies are ready', function () { pm.response.to.have.status(200); });",
+              "pm.test('PostgreSQL and Redis are reachable', function () {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.status).to.eql('ready');",
+              "  pm.expect(body.postgres).to.eql('ok');",
+              "  pm.expect(body.redis).to.eql('ok');",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -70,7 +70,7 @@ Expected responses:
 ## Notes
 - `/health/live` checks that the process is alive.
 - `/health/ready` checks PostgreSQL and Redis connectivity.
-- No business endpoints or authentication are added yet. Those belong to later steps.
+- Business and authentication endpoints are documented in subsequent steps.
 - Do not commit `.env` or real secrets to Git.
 
 ## Step 2: Create and apply the users migration
@@ -117,4 +117,42 @@ Check the current migration state and revision history:
 ```bash
 alembic current
 alembic history
+```
+
+## Step 3: Configure and verify authentication
+
+### 2. Add authentication configuration
+
+Generate a strong signing secret:
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(48))"
+```
+
+Add the generated secret and JWT settings to your local `.env` file:
+```dotenv
+JWT_SECRET_KEY=replace-with-a-generated-secret
+JWT_ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+```
+
+Do not use the example value as a production secret or commit your `.env` file.
+
+### Create the administrator
+
+After applying the database migration, run:
+```bash
+python -m app.cli.seed_admin
+```
+
+Enter the administrator's name, email, and a strong password when prompted. Use those credentials for the admin requests in the Postman collection.
+
+### Verify authentication with Postman
+
+Import `postman/BrightCore_Step03_Authentication.postman_collection.json` and run all eight requests in order. The collection checks candidate registration and login, protected identity, missing-token and invalid-credential rejection, duplicate registration, and seeded administrator login and identity.
+
+After all eight Postman requests pass, commit the changes:
+```bash
+git status
+git add app requirements.txt .env.example postman
+git commit -m "feat: implement JWT authentication and admin seeding"
 ```

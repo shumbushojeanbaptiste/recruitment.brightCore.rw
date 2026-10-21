@@ -70,5 +70,51 @@ Expected responses:
 ## Notes
 - `/health/live` checks that the process is alive.
 - `/health/ready` checks PostgreSQL and Redis connectivity.
-- No business endpoints, authentication, or database migrations are added yet. Those belong to later steps.
+- No business endpoints or authentication are added yet. Those belong to later steps.
 - Do not commit `.env` or real secrets to Git.
+
+## Step 2: Create and apply the users migration
+
+### 2.7: Configure Alembic
+
+Alembic is already listed in `requirements.txt`:
+```text
+alembic>=1.13,<2.0
+```
+
+Install the project requirements:
+```bash
+pip install -r requirements.txt
+```
+
+Alembic is already initialized in this project. If setting up a fresh copy that does not have an `alembic` directory or `alembic.ini`, initialize it with:
+```bash
+alembic init alembic
+```
+
+In the existing `alembic.ini`, set the `sqlalchemy.url` fallback to:
+```ini
+sqlalchemy.url = postgresql+psycopg://brightcore:brightcore_dev_only@localhost:5432/brightcore
+```
+
+The migration environment reads the actual database URL from the application configuration, so this `alembic.ini` value is only a fallback.
+
+Generate a migration from the SQLAlchemy models:
+```bash
+alembic revision --autogenerate -m "create users table"
+```
+
+Alembic creates a revision file in `alembic/versions/`. Open and review the generated migration before applying it. Verify that it creates the `users` table with a UUID primary key, a unique email constraint, the role check constraint, and the `created_at` and `updated_at` timestamps.
+
+Autogeneration compares model metadata with the current database; it does not guarantee that every intended schema change is correct. Review and adjust the migration as needed.
+
+Apply the reviewed migration:
+```bash
+alembic upgrade head
+```
+
+Check the current migration state and revision history:
+```bash
+alembic current
+alembic history
+```

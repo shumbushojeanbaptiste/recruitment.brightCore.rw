@@ -7,6 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.core.config import get_settings
 from app.db.session import engine
+from app.api.router import api_router
 
 settings = get_settings()
 redis_client = redis.from_url(
@@ -28,6 +29,10 @@ app = FastAPI(
     description="BrightCore recruitment platform API",
     lifespan=lifespan,
 )
+app.include_router(
+    api_router,
+    prefix=settings.api_v1_prefix,
+)
 
 
 @app.get("/", tags=["system"])
@@ -38,6 +43,8 @@ def root() -> dict[str, str]:
         "status": "running",
         "docs": "/docs",
     }
+
+
 
 
 @app.get("/health/live", tags=["health"])

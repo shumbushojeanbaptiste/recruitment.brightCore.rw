@@ -45,3 +45,7 @@ def test_dashboard_endpoint_requires_authentication(client):
     response = client.get("/api/v1/admin/dashboard/summary")
 
     assert response.status_code in (401, 403)
+    envelope = response.json()
+    assert envelope["success"] is False
+    assert envelope["error"]["code"] in {"unauthorized", "forbidden"}
+    assert envelope["meta"]["request_id"] == response.headers["X-Request-ID"]

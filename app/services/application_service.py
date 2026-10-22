@@ -2,6 +2,7 @@
 import uuid
 
 from fastapi import HTTPException, UploadFile
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -14,6 +15,8 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from app.models.application_status_history import ApplicationStatusHistory
 from app.models.audit_event import AuditEvent
+
+
 from app.services.notification_service import (
     log_application_status_notification,
 )
@@ -23,7 +26,7 @@ from app.services.notification_service import (
 async def submit_application(
     db: Session,
     *,
-    job_id: uuid.UUID,
+    job_id,
     full_name: str,
     email: str,
     phone: str,
@@ -43,10 +46,6 @@ async def submit_application(
         )
 
     normalized_email = email.strip().lower()
-
-    # Check early for a friendly response. The database unique constraint
-    # remains the authoritative protection against concurrent requests.
-    from sqlalchemy import select
 
     existing = db.scalar(
         select(Application).where(
@@ -77,19 +76,52 @@ async def submit_application(
     )
 
     try:
-        return application_repository.create(db, application)
+        # Obtain the application ID without committing yet.
+        db.add(application)
+        db.flush()
+
+        db.add(
+            ApplicationStatusHistory(
+                application_id=application.id,
+                previous_status=None,
+                new_status="submitted",
+                note=None,
+                changed_by=None,
+            )
+        )
+
+        db.add(
+            AuditEvent(
+                actor_id=None,
+                action="APPLICATION_SUBMITTED",
+                resource_type="application",
+                resource_id=str(application.id),
+                details={
+                    "job_id": str(application.job_id),
+                    "status": "submitted",
+                },
+            )
+        )
+
+        # Application, initial history, and audit event commit together.
+        db.commit()
+        db.refresh(application)
+        return application
+
     except IntegrityError as exc:
         db.rollback()
         delete_cv(stored.storage_key)
+
+        # A concurrent submission may have passed the earlier pre-check.
         raise HTTPException(
             status_code=409,
             detail="This email has already applied for this job",
         ) from exc
+
     except Exception:
         db.rollback()
         delete_cv(stored.storage_key)
         raise
-
 
 
 def update_application_status(

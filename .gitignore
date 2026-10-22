@@ -11,3 +11,4 @@ node_modules/
 .vscode/
 uploads/
 private_uploads/
+.env.production

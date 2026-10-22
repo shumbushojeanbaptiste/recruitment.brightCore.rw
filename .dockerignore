@@ -1,0 +1,14 @@
+
+.git
+.gitignore
+.venv
+__pycache__
+.pytest_cache
+.mypy_cache
+.env
+.env.*
+!.env.example
+private_uploads
+tests
+postman
+*.pyc

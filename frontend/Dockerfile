@@ -5,7 +5,13 @@ FROM node:22-alpine AS build
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci \
+    --fetch-retries=5 \
+    --fetch-retry-factor=2 \
+    --fetch-retry-mintimeout=10000 \
+    --fetch-retry-maxtimeout=120000 \
+    --fetch-timeout=300000
 
 COPY . .
 RUN npm run build

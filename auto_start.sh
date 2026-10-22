@@ -95,7 +95,7 @@ printf '\nMigration state:\n'
 printf '\nRecent API logs:\n'
 "${COMPOSE[@]}" logs --tail 100 api
 
-printf '\nBrightCore is ready.\n'
+printf '\nBrightCore recruitment App is ready.\n'
 printf 'Application: http://localhost/\n'
 printf 'API docs:    http://localhost/docs\n'
 printf 'API health:  http://localhost/health/ready\n'

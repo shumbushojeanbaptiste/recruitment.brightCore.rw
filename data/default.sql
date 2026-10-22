@@ -83,6 +83,23 @@ VALUES
     (SELECT id FROM public.users WHERE role = 'admin' ORDER BY created_at LIMIT 1),
     '2026-10-21 20:00:55.603274+02',
     '2026-10-21 20:00:55.603274+02'
+),
+(
+    '6f81a437-7e99-43ae-a066-00cc6e98daef',
+    'Marketing Officer ',
+    'Sales and customer care',
+    'Kigali, Rwanda',
+    'full_time',
+    'Build reliable backend APIs and services for the BrightCore recruitment platform. Collaborate with product and engineering teams.',
+    'Strong Python skills, API development experience, SQL knowledge, and automated testing experience.',
+    1500000,
+    2500000,
+    'published',
+    NULL,
+    NULL,
+    (SELECT id FROM public.users WHERE role = 'admin' ORDER BY created_at LIMIT 1),
+    '2026-10-21 20:00:55.603274+02',
+    '2026-10-21 20:00:55.603274+02'
 )
 -- Add the remaining jobs here, separated by commas.
 ON CONFLICT (id)

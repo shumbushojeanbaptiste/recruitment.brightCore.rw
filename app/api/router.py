@@ -8,7 +8,9 @@ from app.api.routes import (
     applications,
     auth,
     jobs,
+    candidate,
 )
+
 
 api_router = APIRouter()
 
@@ -19,3 +21,4 @@ api_router.include_router(applications.router)
 api_router.include_router(admin_applications.router)
 api_router.include_router(admin_dashboard.router)
 api_router.include_router(admin_audit.router)
+api_router.include_router(candidate.router)

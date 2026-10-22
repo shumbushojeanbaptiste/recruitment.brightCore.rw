@@ -156,3 +156,36 @@ git status
 git add app requirements.txt .env.example postman
 git commit -m "feat: implement JWT authentication and admin seeding"
 ```
+
+## API response format and observability
+
+Business endpoints under `/api/v1` return successful JSON responses in this
+shape:
+```json
+{
+  "success": true,
+  "data": {},
+  "meta": {
+    "request_id": "request-uuid"
+  }
+}
+```
+
+Errors use `success: false` and include an error `code`, human-readable
+`message`, optional `details`, and the same request ID in `meta`. The request ID
+is also returned in the `X-Request-ID` response header. Health endpoints,
+Prometheus output, and file downloads keep their native response formats.
+
+The API exposes Prometheus metrics at `GET /metrics`. In production, scrape
+`api:8000/metrics` from a Prometheus instance attached to the Compose backend
+network; the public Nginx endpoint intentionally blocks `/metrics`. Grafana can
+use that Prometheus instance as a data source. Available metrics include
+`brightcore_http_requests_total` and
+`brightcore_http_request_duration_seconds`; labels use the route template, HTTP
+method, and status code to avoid per-request path cardinality.
+
+Application logs are emitted as one JSON object per line to stdout, including
+request ID, route, status, and duration for HTTP requests. A Filebeat or other
+container log collector can ingest these JSON lines into Elasticsearch/Logstash
+for Kibana search and dashboards. Request bodies, credentials, and query
+strings are not included in request logs.

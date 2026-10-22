@@ -1,4 +1,3 @@
-
 {
   "info": {
     "name": "BrightCore - Step 03 Authentication",
@@ -54,7 +53,7 @@
             "type": "text/javascript",
             "exec": [
               "pm.test('Returns 201 Created', function () { pm.response.to.have.status(201); });",
-              "const body = pm.response.json();",
+              "const body = pm.response.json().data;",
               "pm.test('Creates a candidate, not an admin', function () { pm.expect(body.role).to.eql('candidate'); pm.expect(body.email).to.eql(pm.collectionVariables.get('candidateEmail')); });",
               "pm.test('Never returns the password hash', function () { pm.expect(body).not.to.have.property('password_hash'); });"
             ]
@@ -85,7 +84,7 @@
             "type": "text/javascript",
             "exec": [
               "pm.test('Returns 200 OK', function () { pm.response.to.have.status(200); });",
-              "const body = pm.response.json();",
+              "const body = pm.response.json().data;",
               "pm.test('Returns a bearer access token', function () { pm.expect(body.access_token).to.be.a('string').and.not.empty; pm.expect(body.token_type).to.eql('bearer'); pm.expect(body.expires_in).to.be.above(0); });",
               "pm.collectionVariables.set('candidateToken', body.access_token);"
             ]
@@ -116,7 +115,7 @@
             "type": "text/javascript",
             "exec": [
               "pm.test('Returns 200 OK', function () { pm.response.to.have.status(200); });",
-              "const body = pm.response.json();",
+              "const body = pm.response.json().data;",
               "pm.test('Returns the authenticated candidate', function () { pm.expect(body.role).to.eql('candidate'); pm.expect(body.email).to.eql(pm.collectionVariables.get('candidateEmail')); });"
             ]
           }
@@ -216,7 +215,7 @@
             "type": "text/javascript",
             "exec": [
               "pm.test('Admin login succeeds', function () { pm.response.to.have.status(200); });",
-              "const body = pm.response.json();",
+              "const body = pm.response.json().data;",
               "pm.test('Returns an access token', function () { pm.expect(body.access_token).to.be.a('string').and.not.empty; });",
               "pm.collectionVariables.set('adminToken', body.access_token);"
             ]
@@ -247,7 +246,7 @@
             "type": "text/javascript",
             "exec": [
               "pm.test('Admin identity is authenticated', function () { pm.response.to.have.status(200); });",
-              "const body = pm.response.json();",
+              "const body = pm.response.json().data;",
               "pm.test('User has the admin role', function () { pm.expect(body.role).to.eql('admin'); });"
             ]
           }

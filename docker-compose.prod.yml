@@ -64,7 +64,7 @@ services:
     volumes:
       - cv_data:/app/private_uploads
     tmpfs:
-      - /tmp/prometheus
+      - /tmp/prometheus:uid=999,gid=999,mode=0700
     depends_on:
       postgres:
         condition: service_healthy

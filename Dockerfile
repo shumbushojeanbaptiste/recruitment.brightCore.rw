@@ -7,8 +7,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-RUN groupadd --system appuser \
-    && useradd --system --gid appuser --home-dir /app appuser \
+RUN groupadd --system --gid 999 appuser \
+    && useradd --system --uid 999 --gid appuser --home-dir /app appuser \
     && mkdir -p /app/private_uploads/cvs \
     && chown -R appuser:appuser /app
 

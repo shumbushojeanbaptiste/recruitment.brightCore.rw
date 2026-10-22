@@ -52,8 +52,8 @@ printf '\n==> 5/8: Start PostgreSQL and Redis and wait for readiness\n'
 printf '\n==> 6/8: Apply all database schema migrations\n'
 "${COMPOSE[@]}" run --rm api alembic upgrade head
 
-printf '\n==> 7/8: Start the API, frontend, and Nginx gateway\n'
-"${COMPOSE[@]}" up -d api nginx
+printf '\n==> 7/8: Start the API and wait for readiness\n'
+"${COMPOSE[@]}" up -d api
 
 printf 'Waiting for the API readiness endpoint'
 api_ready=false
@@ -74,6 +74,9 @@ if [[ "$api_ready" != true ]]; then
     "${COMPOSE[@]}" logs --tail 100 api >&2
     fail "The API did not become ready. Review the API logs above and resolve the reported issue."
 fi
+
+printf '\nStarting the frontend and Nginx gateway\n'
+"${COMPOSE[@]}" up -d frontend nginx
 
 printf '\n==> 8/8: Create or verify the administrator account\n'
 printf 'Enter the admin details when prompted. This does not create a hard-coded default account.\n'

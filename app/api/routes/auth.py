@@ -4,6 +4,8 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.core.rate_limit import rate_limit
+
 from app.api.deps import get_current_user
 from app.core.config import get_settings
 from app.core.security import (
@@ -69,6 +71,13 @@ def register(
 def login(
     payload: LoginRequest,
     db: Session = Depends(get_db),
+    _: None = Depends(
+        rate_limit(
+            limit=5,
+            window_seconds=60,
+            key_prefix="login",
+        )
+    ),
 ) -> TokenResponse:
     user = db.scalar(
         select(User).where(User.email == payload.email)

@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from pydantic import EmailStr, TypeAdapter
 from sqlalchemy.orm import Session
 
+from app.core.rate_limit import rate_limit
 from app.db.session import get_db
 from app.schemas.application import ApplicationPublic
 from app.services.application_service import submit_application
@@ -27,6 +28,13 @@ async def apply_for_job(
     cv: Annotated[UploadFile, File()],
     cover_note: Annotated[str | None, Form(max_length=5000)] = None,
     db: Session = Depends(get_db),
+    _: None = Depends(
+        rate_limit(
+            limit=10,
+            window_seconds=60,
+            key_prefix="application-submit",
+        )
+    ),
 ) -> ApplicationPublic:
     full_name = " ".join(full_name.split())
     phone = phone.strip()

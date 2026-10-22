@@ -1,13 +1,24 @@
 from contextlib import asynccontextmanager
+import logging
+import time
+import uuid
 
 import redis.asyncio as redis
-from fastapi import FastAPI, HTTPException, status
+
+from fastapi import FastAPI, HTTPException, Request, status
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
+from starlette.middleware.base import RequestResponseEndpoint
+from starlette.responses import Response
 
 from app.core.config import get_settings
 from app.db.session import engine
 from app.api.router import api_router
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+)
 
 settings = get_settings()
 redis_client = redis.from_url(
@@ -17,7 +28,8 @@ redis_client = redis.from_url(
 
 
 @asynccontextmanager
-async def lifespan(_: FastAPI):
+async def lifespan(application: FastAPI):
+    application.state.redis = redis_client
     yield
     engine.dispose()
     await redis_client.aclose()
@@ -29,6 +41,43 @@ app = FastAPI(
     description="BrightCore recruitment platform API",
     lifespan=lifespan,
 )
+
+
+@app.middleware("http")
+async def request_logging_middleware(
+    request: Request,
+    call_next: RequestResponseEndpoint,
+) -> Response:
+    request_id = str(uuid.uuid4())
+    request.state.request_id = request_id
+    started = time.perf_counter()
+
+    try:
+        response = await call_next(request)
+    except Exception:
+        logging.getLogger("brightcore.http").exception(
+            "request_failed request_id=%s method=%s path=%s",
+            request_id,
+            request.method,
+            request.url.path,
+        )
+        raise
+
+    elapsed_ms = round((time.perf_counter() - started) * 1000, 2)
+    response.headers["X-Request-ID"] = request_id
+
+    logging.getLogger("brightcore.http").info(
+        "request_complete request_id=%s method=%s path=%s status=%s duration_ms=%s",
+        request_id,
+        request.method,
+        request.url.path,
+        response.status_code,
+        elapsed_ms,
+    )
+
+    return response
+
+
 app.include_router(
     api_router,
     prefix=settings.api_v1_prefix,

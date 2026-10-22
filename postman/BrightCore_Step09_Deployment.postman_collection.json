@@ -1,0 +1,160 @@
+
+{
+  "info": {
+    "name": "BrightCore Step 09 - Deployment Smoke Tests",
+    "description": "Verifies the deployed API, readiness, public jobs, admin authentication, and dashboard.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost"
+    },
+    {
+      "key": "adminEmail",
+      "value": "REPLACE_WITH_YOUR_ADMIN_EMAIL"
+    },
+    {
+      "key": "adminPassword",
+      "value": "REPLACE_WITH_YOUR_ADMIN_PASSWORD"
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Liveness",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/health/live"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('API process is alive', function () { pm.response.to.have.status(200); });",
+              "pm.test('Request ID is present', function () { pm.expect(pm.response.headers.get('X-Request-ID')).to.be.a('string').and.not.empty; });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Readiness",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/health/ready"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('API dependencies are ready', function () { pm.response.to.have.status(200); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Public Jobs",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/jobs?page=1&page_size=10"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Public jobs endpoint works', function () { pm.response.to.have.status(200); });",
+              "pm.expect(pm.response.json().items).to.be.an('array');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Admin Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+        },
+        "url": "{{baseUrl}}/api/v1/auth/login"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Admin login succeeds', function () { pm.response.to.have.status(200); });",
+              "const body = pm.response.json();",
+              "pm.expect(body.access_token).to.be.a('string').and.not.empty;",
+              "pm.collectionVariables.set('adminToken', body.access_token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Admin Dashboard",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/admin/dashboard/summary"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Admin dashboard is accessible', function () { pm.response.to.have.status(200); });",
+              "const body = pm.response.json();",
+              "pm.expect(body.total_applications).to.be.a('number');",
+              "pm.expect(body.published_jobs).to.be.a('number');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - Admin Dashboard Without Token",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/v1/admin/dashboard/summary"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Admin endpoint remains protected', function () { pm.expect([401,403]).to.include(pm.response.code); });"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

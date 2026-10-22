@@ -49,6 +49,7 @@ services:
       REDIS_URL: redis://redis:6379/0
       CV_STORAGE_PATH: /app/private_uploads/cvs
       CV_MAX_BYTES: "5242880"
+      PROMETHEUS_MULTIPROC_DIR: /tmp/prometheus
     command:
       - sh
       - -c
@@ -62,6 +63,8 @@ services:
         --forwarded-allow-ips=*
     volumes:
       - cv_data:/app/private_uploads
+    tmpfs:
+      - /tmp/prometheus
     depends_on:
       postgres:
         condition: service_healthy
@@ -80,6 +83,23 @@ services:
     networks:
       - backend
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - backend
+
   nginx:
     image: nginx:alpine
     restart: unless-stopped
@@ -88,7 +108,7 @@ services:
     volumes:
       - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
-      api:
+      frontend:
         condition: service_healthy
     networks:
       - backend

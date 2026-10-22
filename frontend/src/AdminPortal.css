@@ -200,20 +200,12 @@
   padding: 20px 10px 0;
 }
 
-.admin-sidebar-bottom a,
-.admin-logout {
+.admin-sidebar-bottom a {
   display: flex;
   align-items: center;
   gap: 9px;
   color: #66758a;
   font-size: 12px;
-}
-
-.admin-logout {
-  border: 0;
-  padding: 9px 0;
-  background: transparent;
-  cursor: pointer;
 }
 
 .admin-main {
@@ -623,6 +615,34 @@
   font-size: 23px;
 }
 
+.admin-decision-modal {
+  width: min(100%, 480px);
+}
+
+.admin-modal-copy {
+  margin: 18px 0;
+  color: #66758a;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.admin-modal-copy strong {
+  color: var(--navy);
+}
+
+.admin-optional-label {
+  color: #8996a9;
+  font-weight: 400;
+}
+
+.admin-confirm-danger {
+  background: #b83232;
+}
+
+.admin-confirm-danger:hover {
+  background: #982828;
+}
+
 .icon-button {
   display: grid;
   place-items: center;
@@ -670,14 +690,9 @@
   .admin-nav-label { display: none; }
   .admin-nav { flex-direction: row; }
   .admin-nav-item { justify-content: center; padding: 10px 8px; }
-  .admin-sidebar-bottom {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    padding-top: 12px;
-  }
+  .admin-sidebar-bottom { padding-top: 12px; }
   .admin-main { padding: 22px 5% 45px; }
-  .admin-topbar { align-items: flex-start; }
+  .admin-topbar { align-items: flex-start; flex-wrap: wrap; }
   .admin-welcome { padding: 20px; }
 }
 

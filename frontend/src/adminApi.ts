@@ -7,6 +7,8 @@ import {
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api/v1";
 
 export interface AdminDashboardSummary {
+  rejected_applications: number;
+  accepted_applications: number;
   published_jobs: number;
   total_applications: number;
   pending_reviews: number;

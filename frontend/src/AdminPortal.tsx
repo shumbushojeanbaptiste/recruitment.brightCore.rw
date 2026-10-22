@@ -8,7 +8,6 @@ import {
   ClipboardList,
   Download,
   LayoutDashboard,
-  LogOut,
   Plus,
   RefreshCw,
   Search,
@@ -16,7 +15,6 @@ import {
   X,
 } from "lucide-react";
 import {
-  adminLogout,
   closeAdminJob,
   createAdminJob,
   downloadApplicationCV,
@@ -206,7 +204,7 @@ function JobEditor({
           </label>
 
           <label>
-            Requirements *
+            Responsibility And Requirements *
             <textarea
               rows={4}
               value={form.requirements}
@@ -272,6 +270,174 @@ function JobEditor({
   );
 }
 
+function StatusDecisionDialog({
+  application,
+  status,
+  onClose,
+  onSubmit,
+}: {
+  application: AdminApplication;
+  status: AdminApplication["status"];
+  onClose: () => void;
+  onSubmit: (note: string) => Promise<void>;
+}) {
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const decision = status.replaceAll("_", " ");
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setError("");
+
+    try {
+      await onSubmit(note.trim());
+      onClose();
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="admin-modal-backdrop" role="presentation">
+      <section
+        className="admin-modal admin-decision-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="decision-title"
+      >
+        <div className="admin-modal-header">
+          <h2 id="decision-title">Update application</h2>
+          <button
+            type="button"
+            className="icon-button"
+            onClick={onClose}
+            aria-label="Close dialog"
+            disabled={busy}
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <p className="admin-modal-copy">
+          Set <strong>{application.full_name}</strong>&apos;s status to{" "}
+          <strong>{decision}</strong>. Add an optional note for the record.
+        </p>
+
+        {error && <div className="admin-error" role="alert">{error}</div>}
+
+        <form className="admin-form" onSubmit={submit}>
+          <label>
+            Note <span className="admin-optional-label">(optional)</span>
+            <textarea
+              rows={4}
+              maxLength={5000}
+              value={note}
+              onChange={(event) => setNote(event.target.value)}
+              placeholder="Add context for this decision"
+              disabled={busy}
+            />
+          </label>
+
+          <div className="admin-modal-actions">
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={onClose}
+              disabled={busy}
+            >
+              Cancel
+            </button>
+            <button className="primary-button" disabled={busy}>
+              {busy ? "Saving…" : `Confirm ${decision}`}
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  );
+}
+
+function CloseJobDialog({
+  job,
+  onClose,
+  onConfirm,
+}: {
+  job: AdminJob;
+  onClose: () => void;
+  onConfirm: () => Promise<void>;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  async function confirm() {
+    setBusy(true);
+    setError("");
+
+    try {
+      await onConfirm();
+      onClose();
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="admin-modal-backdrop" role="presentation">
+      <section
+        className="admin-modal admin-decision-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="close-job-title"
+      >
+        <div className="admin-modal-header">
+          <h2 id="close-job-title">Close this position?</h2>
+          <button
+            type="button"
+            className="icon-button"
+            onClick={onClose}
+            aria-label="Close dialog"
+            disabled={busy}
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <p className="admin-modal-copy">
+          <strong>{job.title}</strong> will no longer accept applications.
+          You can still review existing applications.
+        </p>
+
+        {error && <div className="admin-error" role="alert">{error}</div>}
+
+        <div className="admin-modal-actions">
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={onClose}
+            disabled={busy}
+          >
+            Keep open
+          </button>
+          <button
+            type="button"
+            className="primary-button admin-confirm-danger"
+            onClick={() => void confirm()}
+            disabled={busy}
+          >
+            {busy ? "Closing…" : "Close position"}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function AdminDashboard() {
   const [section, setSection] = useState<Section>("overview");
   const [summary, setSummary] = useState<AdminDashboardSummary | null>(null);
@@ -280,6 +446,11 @@ function AdminDashboard() {
   const [statusFilter, setStatusFilter] = useState("");
   const [jobFilter, setJobFilter] = useState("");
   const [editor, setEditor] = useState<AdminJob | null | undefined>(undefined);
+  const [statusDecision, setStatusDecision] = useState<{
+    application: AdminApplication;
+    status: AdminApplication["status"];
+  } | null>(null);
+  const [jobToClose, setJobToClose] = useState<AdminJob | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -363,7 +534,7 @@ function AdminDashboard() {
   async function performJobAction(
     job: AdminJob,
     action: "publish" | "close",
-  ) {
+  ): Promise<string | null> {
     setBusyId(job.id);
     setError("");
     setNotice("");
@@ -378,8 +549,9 @@ function AdminDashboard() {
       }
 
       await Promise.all([loadJobs(), loadOverview()]);
+      return null;
     } catch (err) {
-      setError(errorMessage(err));
+      return errorMessage(err);
     } finally {
       setBusyId("");
     }
@@ -388,14 +560,8 @@ function AdminDashboard() {
   async function changeStatus(
     application: AdminApplication,
     status: AdminApplication["status"],
+    note: string,
   ) {
-    const note = window.prompt(
-      `Optional note for this ${status.replaceAll("_", " ")} decision:`,
-      application.status_note ?? "",
-    );
-
-    if (note === null) return;
-
     setBusyId(application.id);
     setError("");
     setNotice("");
@@ -404,8 +570,6 @@ function AdminDashboard() {
       await updateApplicationStatus(application.id, status, note);
       setNotice("Application status updated.");
       await Promise.all([loadApplications(), loadOverview()]);
-    } catch (err) {
-      setError(errorMessage(err));
     } finally {
       setBusyId("");
     }
@@ -425,11 +589,6 @@ function AdminDashboard() {
     }
   }
 
-  function logout() {
-    adminLogout();
-    window.location.assign("/login");
-  }
-
   const navItems: { key: Section; label: string; icon: typeof LayoutDashboard }[] = [
     { key: "overview", label: "Overview", icon: LayoutDashboard },
     { key: "jobs", label: "Jobs", icon: BriefcaseBusiness },
@@ -440,8 +599,8 @@ function AdminDashboard() {
     <div className="admin-layout">
       <aside className="admin-sidebar">
         <Link to="/" className="admin-brand">
-          <span className="brand-mark">B</span>
-          <span>BrightCore<small>RECRUITMENT</small></span>
+          {/* <span className="brand-mark">B</span> */}
+          <span>E-Recruitment<small>Admin</small></span>
         </Link>
 
         <div className="admin-nav-label">WORKSPACE</div>
@@ -463,9 +622,6 @@ function AdminDashboard() {
 
         <div className="admin-sidebar-bottom">
           <Link to="/">View public site ↗</Link>
-          <button className="admin-logout" onClick={logout}>
-            <LogOut size={17} /> Sign out
-          </button>
         </div>
       </aside>
 
@@ -505,8 +661,8 @@ function AdminDashboard() {
               <MetricCard label="Published jobs" value={summary.published_jobs} icon="jobs" />
               <MetricCard label="Total applications" value={summary.total_applications} icon="applications" />
               <MetricCard label="Pending reviews" value={summary.pending_reviews} icon="pending" />
-              <MetricCard label="Accepted" value={summary.accepted} icon="accepted" />
-              <MetricCard label="Rejected" value={summary.rejected} icon="rejected" />
+              <MetricCard label="Accepted" value={summary.accepted_applications} icon="accepted" />
+              <MetricCard label="Rejected" value={summary.rejected_applications} icon="rejected" />
             </div>
 
             <div className="admin-quick-actions">
@@ -584,7 +740,11 @@ function AdminDashboard() {
                               <button
                                 className="table-action"
                                 disabled={busyId === job.id}
-                                onClick={() => void performJobAction(job, "publish")}
+                                onClick={() => {
+                                  void performJobAction(job, "publish").then((actionError) => {
+                                    if (actionError) setError(actionError);
+                                  });
+                                }}
                               >
                                 Publish
                               </button>
@@ -593,11 +753,7 @@ function AdminDashboard() {
                               <button
                                 className="table-action danger"
                                 disabled={busyId === job.id}
-                                onClick={() => {
-                                  if (window.confirm(`Close "${job.title}"?`)) {
-                                    void performJobAction(job, "close");
-                                  }
-                                }}
+                                onClick={() => setJobToClose(job)}
                               >
                                 Close
                               </button>
@@ -659,7 +815,9 @@ function AdminDashboard() {
                     key={application.id}
                     application={application}
                     busy={busyId === application.id}
-                    onStatusChange={changeStatus}
+                    onStatusChange={(application, status) => {
+                      setStatusDecision({ application, status });
+                    }}
                     onDownload={downloadCV}
                   />
                 ))}
@@ -679,6 +837,28 @@ function AdminDashboard() {
           }}
         />
       )}
+      {statusDecision && (
+        <StatusDecisionDialog
+          application={statusDecision.application}
+          status={statusDecision.status}
+          onClose={() => setStatusDecision(null)}
+          onSubmit={(note) => changeStatus(
+            statusDecision.application,
+            statusDecision.status,
+            note,
+          )}
+        />
+      )}
+      {jobToClose && (
+        <CloseJobDialog
+          job={jobToClose}
+          onClose={() => setJobToClose(null)}
+          onConfirm={async () => {
+            const actionError = await performJobAction(jobToClose, "close");
+            if (actionError) throw new Error(actionError);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -694,7 +874,7 @@ function ApplicantCard({
   onStatusChange: (
     application: AdminApplication,
     status: AdminApplication["status"],
-  ) => Promise<void>;
+  ) => void | Promise<void>;
   onDownload: (application: AdminApplication) => Promise<void>;
 }) {
   return (
@@ -742,7 +922,7 @@ function ApplicantCard({
             disabled={busy || application.status === "accepted" || application.status === "rejected"}
             onChange={(event) => {
               const status = event.target.value as AdminApplication["status"];
-              void onStatusChange(application, status);
+              onStatusChange(application, status);
             }}
           >
             <option value="submitted">Submitted</option>

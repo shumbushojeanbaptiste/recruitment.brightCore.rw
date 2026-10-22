@@ -5,18 +5,14 @@ import {
   ArrowRight,
   BriefcaseBusiness,
   CircleUserRound,
-  LogOut,
   RefreshCw,
 } from "lucide-react";
 import {
-  clearCandidateToken,
   fetchCandidateApplications,
-  fetchCandidateProfile,
   getCandidateToken,
   loginCandidate,
   registerCandidate,
   type CandidateApplication,
-  type CandidateProfile,
 } from "./candidateApi";
 import "./CandidatePortal.css";
 
@@ -167,7 +163,6 @@ function statusLabel(status: CandidateApplication["status"]) {
 
 function CandidateDashboard() {
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<CandidateProfile | null>(null);
   const [applications, setApplications] = useState<CandidateApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -177,12 +172,7 @@ function CandidateDashboard() {
     setError("");
 
     try {
-      const [profileResult, applicationsResult] = await Promise.all([
-        fetchCandidateProfile(),
-        fetchCandidateApplications(),
-      ]);
-
-      setProfile(profileResult);
+      const applicationsResult = await fetchCandidateApplications();
       setApplications(applicationsResult.items);
     } catch (err) {
       setError(messageOf(err));
@@ -199,11 +189,6 @@ function CandidateDashboard() {
     void loadDashboard();
   }, []);
 
-  function logout() {
-    clearCandidateToken();
-    navigate("/login", { replace: true });
-  }
-
   return (
     <main className="candidate-dashboard">
       <div className="candidate-dashboard-header">
@@ -213,9 +198,6 @@ function CandidateDashboard() {
           <p>Track your applications and stay informed about your progress.</p>
         </div>
 
-        <button className="secondary-button" onClick={logout}>
-          <LogOut size={16} /> Sign out
-        </button>
       </div>
 
       {loading && <div className="state-panel">Loading your candidate portal…</div>}
@@ -230,17 +212,8 @@ function CandidateDashboard() {
         </div>
       )}
 
-      {!loading && !error && profile && (
+      {!loading && !error && (
         <>
-          <section className="candidate-profile-card">
-            <div className="candidate-profile-icon"><CircleUserRound size={26} /></div>
-            <div>
-              <span className="candidate-hint">SIGNED IN AS</span>
-              <h2>{profile.full_name}</h2>
-              <p>{profile.email}</p>
-            </div>
-          </section>
-
           <section className="candidate-applications-section">
             <div className="candidate-section-heading">
               <div>

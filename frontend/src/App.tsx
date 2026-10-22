@@ -1,14 +1,16 @@
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   ArrowLeft,
   ArrowRight,
   BriefcaseBusiness,
   Building2,
   Clock3,
+  ChevronDown,
   MapPin,
   Search,
   CheckCircle2,
+  CircleUserRound,
   FileUp,
   LogIn,
   LogOut,
@@ -37,6 +39,7 @@ import {
   clearCandidateToken,
   fetchAuthenticatedUser,
   getCandidateToken,
+  type AuthenticatedUser,
 } from "./candidateApi";
 
 function formatEmploymentType(value: string) {
@@ -76,10 +79,19 @@ function Header() {
   const [isAuthenticated, setIsAuthenticated] = useState(
     () => getCandidateToken() !== null,
   );
+  const [account, setAccount] = useState<AuthenticatedUser | null>(null);
+  const [accountError, setAccountError] = useState("");
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
+  const accountTriggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     function updateAuthentication() {
-      setIsAuthenticated(getCandidateToken() !== null);
+      const authenticated = getCandidateToken() !== null;
+      setIsAuthenticated(authenticated);
+      setAccount(null);
+      setAccountError("");
+      setAccountMenuOpen(false);
     }
 
     window.addEventListener("brightcore-auth-change", updateAuthentication);
@@ -88,7 +100,56 @@ function Header() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    let active = true;
+    void fetchAuthenticatedUser()
+      .then((user) => {
+        if (active) setAccount(user);
+      })
+      .catch((error: unknown) => {
+        if (active) {
+          setAccountError(
+            error instanceof Error ? error.message : "Account details unavailable.",
+          );
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (!accountMenuOpen) return;
+
+    function closeOnOutsideClick(event: MouseEvent) {
+      if (
+        event.target instanceof Node &&
+        !accountMenuRef.current?.contains(event.target)
+      ) {
+        setAccountMenuOpen(false);
+      }
+    }
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setAccountMenuOpen(false);
+        accountTriggerRef.current?.focus();
+      }
+    }
+
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [accountMenuOpen]);
+
   function signOut() {
+    setAccountMenuOpen(false);
     clearCandidateToken();
     navigate("/", { replace: true });
   }
@@ -113,10 +174,59 @@ function Header() {
           </Link>
         </>
       ) : (
-        <button className="header-sign-in" type="button" onClick={signOut}>
-          <LogOut size={16} />
-          <span>Sign out</span>
-        </button>
+        <div className="header-account-actions">
+          <div className="header-account-menu" ref={accountMenuRef}>
+            <button
+              ref={accountTriggerRef}
+              className="header-account"
+              type="button"
+              aria-label={
+                account ? `Account menu for ${account.full_name}` : "Account menu"
+              }
+              aria-haspopup="menu"
+              aria-expanded={accountMenuOpen}
+              onClick={() => setAccountMenuOpen((open) => !open)}
+            >
+              <CircleUserRound size={22} aria-hidden="true" />
+              <span className="header-account-details">
+                <span className="header-account-label">SIGNED IN AS</span>
+                {account ? (
+                  <>
+                    <strong>{account.full_name}</strong>
+                    <small>{account.email}</small>
+                  </>
+                ) : (
+                  <small>{accountError || "Loading account…"}</small>
+                )}
+              </span>
+              <ChevronDown
+                className={accountMenuOpen ? "header-account-chevron open" : "header-account-chevron"}
+                size={16}
+                aria-hidden="true"
+              />
+            </button>
+
+            {accountMenuOpen && (
+              <div className="header-account-dropdown" role="menu">
+                {account && (
+                  <div className="header-account-dropdown-profile">
+                    <strong>{account.full_name}</strong>
+                    <small>{account.email}</small>
+                  </div>
+                )}
+                <button
+                  className="header-account-sign-out"
+                  type="button"
+                  role="menuitem"
+                  onClick={signOut}
+                >
+                  <LogOut size={16} />
+                  <span>Sign out</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </header>
   );
@@ -723,7 +833,7 @@ function JobDetailsPage() {
         </section>
 
         <section className="description-block">
-          <h2>Requirements</h2>
+          <h2>Responsibility And Requirements</h2>
           <p className="long-text">{job.requirements || "Please contact the recruitment team for further information."}</p>
         </section>
 

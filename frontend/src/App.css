@@ -72,6 +72,107 @@ p { line-height: 1.7; }
   font-weight: 700;
   transition: background .18s, border-color .18s, transform .18s;
 }
+.header-account-actions,
+.header-account {
+  display: flex;
+  align-items: center;
+}
+.header-account-actions { gap: 14px; }
+.header-account-menu { position: relative; }
+.header-account {
+  gap: 9px;
+  padding: 7px 9px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--blue);
+  text-align: left;
+  transition: background .18s, border-color .18s;
+}
+.header-account:hover,
+.header-account[aria-expanded="true"] {
+  border-color: #e1e9f6;
+  background: #f7f9fd;
+}
+.header-account-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.header-account-label {
+  color: #8996a9;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .1em;
+}
+.header-account strong {
+  color: var(--navy);
+  font-size: 12px;
+}
+.header-account small {
+  max-width: 220px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.header-account-chevron {
+  flex-shrink: 0;
+  color: #74839a;
+  transition: transform .18s;
+}
+.header-account-chevron.open { transform: rotate(180deg); }
+.header-account-dropdown {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(280px, calc(100vw - 32px));
+  padding: 7px;
+  border: 1px solid #e1e8f2;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 14px 36px #17365c1f;
+}
+.header-account-dropdown-profile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 11px 12px;
+  border-bottom: 1px solid #edf0f5;
+}
+.header-account-dropdown-profile strong {
+  overflow: hidden;
+  color: var(--navy);
+  font-size: 13px;
+  text-overflow: ellipsis;
+}
+.header-account-dropdown-profile small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+}
+.header-account-sign-out {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 10px 11px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #a32424;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+}
+.header-account-sign-out:hover,
+.header-account-sign-out:focus-visible {
+  background: #fff3f3;
+}
 .header-sign-in:hover {
   border-color: #b9ccef;
   background: #edf3ff;
@@ -196,6 +297,8 @@ p { line-height: 1.7; }
   .site-header { padding: 16px 5%; min-height: 70px; flex-wrap: wrap; }
   .main-nav { order: 3; width: 100%; justify-content: center; gap: 24px; padding-top: 9px; }
   .header-sign-in { min-height: 39px; padding: 0 12px; font-size: 13px; }
+  .header-account-actions { order: 3; width: 100%; justify-content: flex-end; }
+  .header-account small { max-width: 180px; }
   .hero { padding: 58px 5% 48px; }
   .hero-decoration { right: -90px; top: 8%; opacity: .2; }
   .hero h1 { font-size: clamp(37px, 9vw, 52px); }

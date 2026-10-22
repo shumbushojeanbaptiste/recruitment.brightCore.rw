@@ -157,6 +157,14 @@ git add app requirements.txt .env.example postman
 git commit -m "feat: implement JWT authentication and admin seeding"
 ```
 
+## Production startup and default data
+
+Run `auto_start.sh` to test the project, apply database migrations, and start
+the production services. After you create or verify the administrator account,
+the script imports `data/default.sql` into PostgreSQL using `psql`. The SQL
+uses `ON CONFLICT` to update matching job IDs, so rerunning startup is safe.
+Seed job rows are associated with an existing administrator account.
+
 ## API response format and observability
 
 Business endpoints under `/api/v1` return successful JSON responses in this

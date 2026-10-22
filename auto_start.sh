@@ -31,28 +31,30 @@ command -v "$PYTHON_BIN" >/dev/null 2>&1 || fail \
 [[ -f "$ENV_FILE" ]] || fail \
     "Missing $ENV_FILE. Add POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD, and a generated JWT_SECRET_KEY before starting the stack."
 [[ -f "$COMPOSE_FILE" ]] || fail "Missing Compose file: $COMPOSE_FILE"
+[[ -f "$ROOT_DIR/data/default.sql" ]] || fail \
+    "Missing $ROOT_DIR/data/default.sql."
 
 COMPOSE=(docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE")
 
-printf '\n==> 1/8: Run the test suite\n'
+printf '\n==> 1/9: Run the test suite\n'
 "$PYTHON_BIN" -m pytest -q
 
-printf '\n==> 2/8: Validate the production Compose configuration\n'
+printf '\n==> 2/9: Validate the production Compose configuration\n'
 "${COMPOSE[@]}" config -q
 
-printf '\n==> 3/8: Pull PostgreSQL, Redis, and Nginx gateway images\n'
+printf '\n==> 3/9: Pull PostgreSQL, Redis, and Nginx gateway images\n'
 "${COMPOSE[@]}" pull postgres redis nginx
 
-printf '\n==> 4/8: Build the API and frontend images\n'
+printf '\n==> 4/9: Build the API and frontend images\n'
 "${COMPOSE[@]}" build --pull api frontend
 
-printf '\n==> 5/8: Start PostgreSQL and Redis and wait for readiness\n'
+printf '\n==> 5/9: Start PostgreSQL and Redis and wait for readiness\n'
 "${COMPOSE[@]}" up -d postgres redis
 
-printf '\n==> 6/8: Apply all database schema migrations\n'
+printf '\n==> 6/9: Apply all database schema migrations\n'
 "${COMPOSE[@]}" run --rm api alembic upgrade head
 
-printf '\n==> 7/8: Start the API and wait for readiness\n'
+printf '\n==> 7/9: Start the API and wait for readiness\n'
 "${COMPOSE[@]}" up -d api
 
 printf 'Waiting for the API readiness endpoint'
@@ -78,9 +80,13 @@ fi
 printf '\nStarting the frontend and Nginx gateway\n'
 "${COMPOSE[@]}" up -d frontend nginx
 
-printf '\n==> 8/8: Create or verify the administrator account\n'
+printf '\n==> 8/9: Create or verify the administrator account\n'
 printf 'Enter the admin details when prompted. This does not create a hard-coded default account.\n'
 "${COMPOSE[@]}" exec api python -m app.cli.seed_admin
+
+printf '\n==> 9/9: Import default data from data/default.sql\n'
+"${COMPOSE[@]}" exec -T postgres sh -c \
+    'psql --set ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" --file /data/default.sql'
 
 printf '\nMigration state:\n'
 "${COMPOSE[@]}" exec -T api alembic current

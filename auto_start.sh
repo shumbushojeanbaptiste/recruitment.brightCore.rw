@@ -40,11 +40,11 @@ printf '\n==> 1/8: Run the test suite\n'
 printf '\n==> 2/8: Validate the production Compose configuration\n'
 "${COMPOSE[@]}" config -q
 
-printf '\n==> 3/8: Pull PostgreSQL, Redis, and Nginx images\n'
+printf '\n==> 3/8: Pull PostgreSQL, Redis, and Nginx gateway images\n'
 "${COMPOSE[@]}" pull postgres redis nginx
 
-printf '\n==> 4/8: Build the API image and pull its base image\n'
-"${COMPOSE[@]}" build --pull api
+printf '\n==> 4/8: Build the API and frontend images\n'
+"${COMPOSE[@]}" build --pull api frontend
 
 printf '\n==> 5/8: Start PostgreSQL and Redis and wait for readiness\n'
 "${COMPOSE[@]}" up -d postgres redis
@@ -52,7 +52,7 @@ printf '\n==> 5/8: Start PostgreSQL and Redis and wait for readiness\n'
 printf '\n==> 6/8: Apply all database schema migrations\n'
 "${COMPOSE[@]}" run --rm api alembic upgrade head
 
-printf '\n==> 7/8: Start the API and Nginx\n'
+printf '\n==> 7/8: Start the API, frontend, and Nginx gateway\n'
 "${COMPOSE[@]}" up -d api nginx
 
 printf 'Waiting for the API readiness endpoint'

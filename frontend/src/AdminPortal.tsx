@@ -67,10 +67,14 @@ function MetricCard({
   }[icon];
 
   return (
-    <article className="metric-card">
-      <div className={`metric-icon metric-${icon}`}><Icon size={21} /></div>
-      <p>{label}</p>
-      <strong>{value}</strong>
+    <article className={`metric-card metric-${icon}`}>
+      <div className="metric-card-content">
+        <p>{label}</p>
+        <strong>{value}</strong>
+      </div>
+      <div className="metric-ribbon" aria-hidden="true">
+        <Icon size={17} />
+      </div>
     </article>
   );
 }

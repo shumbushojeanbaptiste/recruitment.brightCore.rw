@@ -1,4 +1,6 @@
 
+import { apiErrorMessage } from "./apiErrors";
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api/v1";
 const TOKEN_KEY = "brightcore_candidate_token";
 const AUTH_CHANGE_EVENT = "brightcore-auth-change";
@@ -80,16 +82,11 @@ async function apiRequest<T>(
   const payload = await response.json().catch(() => null);
 
   if (!response.ok) {
-    if (response.status === 401 || response.status === 403) {
+    if (authenticated && response.status === 401) {
       throw new Error("Your session may have expired. Please sign in again.");
     }
 
-    const message = payload?.error?.message;
-    throw new Error(
-      typeof message === "string"
-        ? message
-        : `Request failed (HTTP ${response.status}).`,
-    );
+    throw new Error(apiErrorMessage(payload, response.status));
   }
 
   if (payload?.success !== true) {

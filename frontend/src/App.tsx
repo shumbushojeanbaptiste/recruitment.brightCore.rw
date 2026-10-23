@@ -28,6 +28,7 @@ import {
 } from "react-router-dom";
 
 import { getJob } from "./api";
+import { apiErrorMessage } from "./apiErrors";
 import type { Job } from "./types";
 import "./App.css";
 import {
@@ -565,26 +566,14 @@ function ApplicationForm({ jobId }: { jobId: string }) {
       const payload = await response.json().catch(() => null);
 
       if (!response.ok) {
-        const error = payload?.error;
-        const details = error?.details;
-
-        if (Array.isArray(details)) {
-          throw new Error(
-            details.map((item: { message?: string }) => item.message ?? "Invalid input")
-              .join("; "),
-          );
-        }
-
-        if (typeof error?.message === "string") {
-          throw new Error(error.message);
-        }
-
-        if (response.status === 429) {
-          throw new Error("Too many attempts. Please wait before trying again.");
-        }
-
         throw new Error(
-          `Application submission failed (HTTP ${response.status}).`,
+          apiErrorMessage(
+            payload,
+            response.status,
+            response.status === 429
+              ? "Too many attempts. Please wait before trying again."
+              : `Application submission failed (HTTP ${response.status}).`,
+          ),
         );
       }
 

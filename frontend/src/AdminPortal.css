@@ -271,44 +271,73 @@
 
 .metrics-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 15px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
   margin-top: 22px;
 }
 
 .metric-card {
-  padding: 20px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 82px;
+  padding: 15px 48px 15px 16px;
   border: 1px solid #e5eaf1;
-  border-radius: 13px;
+  border-radius: 11px;
   background: #fff;
   min-width: 0;
 }
 
-.metric-icon {
+.metric-card-content {
+  min-width: 0;
+}
+
+.metric-ribbon {
+  position: absolute;
+  top: 0;
+  right: 0;
   display: grid;
   place-items: center;
-  width: 39px;
-  height: 39px;
-  border-radius: 10px;
+  width: 38px;
+  height: 38px;
+  border-radius: 0 10px 0 12px;
   background: #edf3ff;
   color: #245bc5;
 }
 
-.metric-applications { color: #6c4ac7; background: #f0eaff; }
-.metric-pending { color: #9a6800; background: #fff5d9; }
-.metric-accepted { color: #187343; background: #e7f7ed; }
-.metric-rejected { color: #a32424; background: #fff0f0; }
-
 .metric-card p {
-  margin: 17px 0 6px;
+  margin: 0 0 5px;
   color: #728096;
   font-size: 12px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .metric-card strong {
   color: var(--navy);
   font-family: "Manrope", sans-serif;
-  font-size: 29px;
+  font-size: 25px;
+  line-height: 1;
+}
+
+.metric-card.metric-applications .metric-ribbon {
+  color: #6c4ac7;
+  background: #f0eaff;
+}
+
+.metric-card.metric-pending .metric-ribbon {
+  color: #9a6800;
+  background: #fff5d9;
+}
+
+.metric-card.metric-accepted .metric-ribbon {
+  color: #187343;
+  background: #e7f7ed;
+}
+
+.metric-card.metric-rejected .metric-ribbon {
+  color: #a32424;
+  background: #fff0f0;
 }
 
 .admin-quick-actions {
@@ -674,7 +703,7 @@
 
 @media (max-width: 1050px) {
   .admin-sidebar { flex-basis: 205px; }
-  .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .metrics-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .admin-applicant-list { grid-template-columns: 1fr; }
 }
 
@@ -698,9 +727,10 @@
 
 @media (max-width: 520px) {
   .metrics-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
-  .metric-card { padding: 14px; }
-  .metric-card strong { font-size: 24px; }
+  .metric-card { min-height: 74px; padding: 12px 42px 12px 12px; }
+  .metric-card strong { font-size: 22px; }
   .metric-card p { font-size: 11px; }
+  .metric-ribbon { width: 32px; height: 32px; }
   .admin-welcome-icon { display: none; }
   .admin-form-row { grid-template-columns: 1fr; }
   .admin-modal { padding: 19px; }

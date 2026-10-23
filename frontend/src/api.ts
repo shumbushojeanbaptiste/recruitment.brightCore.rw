@@ -1,5 +1,6 @@
 
 import type { Job, JobListResponse } from "./types";
+import { apiErrorMessage } from "./apiErrors";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api/v1";
 
@@ -9,10 +10,13 @@ async function request<T>(path: string): Promise<T> {
 
   if (!response.ok) {
     throw new Error(
-      payload?.error?.message ??
-        (response.status === 404
+      apiErrorMessage(
+        payload,
+        response.status,
+        response.status === 404
           ? "This job is no longer available."
-          : `Request failed with status ${response.status}.`),
+          : `Request failed with status ${response.status}.`,
+      ),
     );
   }
 

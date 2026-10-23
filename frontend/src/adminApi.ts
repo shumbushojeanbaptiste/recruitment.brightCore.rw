@@ -3,6 +3,7 @@ import {
   clearCandidateToken,
   getCandidateToken,
 } from "./candidateApi";
+import { apiErrorMessage } from "./apiErrors";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api/v1";
 
@@ -92,17 +93,11 @@ async function adminRequest<T>(
   const payload = await response.json().catch(() => null);
 
   if (!response.ok) {
-    if (response.status === 401 || response.status === 403) {
-      throw new Error(
-        "Access denied. Check that you are signed in with an administrator account.",
-      );
+    if (response.status === 401) {
+      throw new Error("Your session may have expired. Please sign in again.");
     }
 
-    throw new Error(
-      typeof payload?.error?.message === "string"
-        ? payload.error.message
-        : `Request failed (HTTP ${response.status}).`,
-    );
+    throw new Error(apiErrorMessage(payload, response.status));
   }
 
   if (payload?.success !== true) {
@@ -201,7 +196,17 @@ export async function downloadApplicationCV(id: string) {
   );
 
   if (!response.ok) {
-    throw new Error(`CV download failed (HTTP ${response.status}).`);
+    const payload = await response.json().catch(() => null);
+    if (response.status === 401) {
+      throw new Error("Your session may have expired. Please sign in again.");
+    }
+    throw new Error(
+      apiErrorMessage(
+        payload,
+        response.status,
+        `CV download failed (HTTP ${response.status}).`,
+      ),
+    );
   }
 
   const blob = await response.blob();

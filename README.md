@@ -1,4 +1,4 @@
-# BrightCore Recruitment
+# BrightCore E-Recruitment
 
 BrightCore Recruitment is a recruitment web application with a React frontend
 and a FastAPI backend. The production Docker Compose setup runs the web app,

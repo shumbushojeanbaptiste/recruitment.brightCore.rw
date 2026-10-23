@@ -7,6 +7,10 @@ API, PostgreSQL database, and Redis.
 This guide takes you from cloning the repository to starting the complete app
 on your own computer. The final startup command is `auto_start.sh`.
 
+Important: Do not skip any step in this guide. Follow the steps in order, and
+make sure the administrator password is at least 12 characters long when you
+are prompted during startup.
+
 ## Prerequisites
 
 - Git
@@ -143,10 +147,12 @@ the sample recruitment data. The initial image download and build can take
 several minutes.
 
 When prompted, enter the administrator's full name, email, and a password of
-12–128 characters twice. **There is no hard-coded seeded admin username or
-password.** These are the credentials you create and will use to sign in.
-Running the script again with the same admin email verifies the existing
-administrator rather than creating a duplicate.
+at least 12 characters (up to 128 characters) twice. Do not skip the setup
+prompt, and make sure the password meets the minimum length requirement.
+**There is no hard-coded seeded admin username or password.** These are the
+credentials you create and will use to sign in. Running the script again with
+the same admin email verifies the existing administrator rather than creating a
+duplicate.
 
 When startup finishes, open:
 

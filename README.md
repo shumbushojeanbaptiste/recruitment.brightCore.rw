@@ -16,7 +16,7 @@ on your own computer. The final startup command is `auto_start.sh`.
   to run the test suite before starting the app.
 - On Windows, Git for Windows (Git Bash) or WSL to run the Bash startup script.
 
-The frontend and API run in Docker; you do not need to install Node.js to run
+The frontend and API run in Docker; you do not need to install dependencies manuary to run
 the production setup.
 
 ## 1. Clone the repository

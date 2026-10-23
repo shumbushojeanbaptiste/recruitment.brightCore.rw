@@ -1,3 +1,4 @@
+import os
 
 import pytest
 
@@ -5,6 +6,11 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
+
+# The application is imported below and loads settings at module import time.
+os.environ.setdefault("DATABASE_URL", "sqlite:///./test-bootstrap.db")
+os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")
+os.environ.setdefault("JWT_SECRET_KEY", "test-only-secret-not-for-production")
 
 from app.db.base import Base
 from app.db.session import get_db

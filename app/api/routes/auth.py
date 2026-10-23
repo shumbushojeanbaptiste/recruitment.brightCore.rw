@@ -73,7 +73,7 @@ def login(
     db: Session = Depends(get_db),
     _: None = Depends(
         rate_limit(
-            limit=5,
+            limit=10,
             window_seconds=60,
             key_prefix="login",
         )

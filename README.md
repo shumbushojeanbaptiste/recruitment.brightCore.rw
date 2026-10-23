@@ -1,199 +1,218 @@
-# BrightCore Recruitment — Step 01
+# BrightCore Recruitment
 
-Step 01 establishes the backend foundation: FastAPI, PostgreSQL, Redis, configuration, and health endpoints.
+BrightCore Recruitment is a recruitment web application with a React frontend
+and a FastAPI backend. The production Docker Compose setup runs the web app,
+API, PostgreSQL database, and Redis.
+
+This guide takes you from cloning the repository to starting the complete app
+on your own computer. The final startup command is `auto_start.sh`.
 
 ## Prerequisites
-- Python 3.12+
-- Docker Desktop / Docker Engine with Docker Compose
-- Postman
 
-## 1. Configure environment
-Copy `.env.example` to `.env`.
+- Git
+- Docker Desktop on Windows or Docker Engine with the Docker Compose plugin on
+  Linux. Docker must be running.
+- Python 3.12 or newer installed on your computer. The startup script uses it
+  to run the test suite before starting the app.
+- On Windows, Git for Windows (Git Bash) or WSL to run the Bash startup script.
+
+The frontend and API run in Docker; you do not need to install Node.js to run
+the production setup.
+
+## 1. Clone the repository
+
+Choose either HTTPS or SSH:
+
+```bash
+git clone https://github.com/shumbushojeanbaptiste/recruitment.brightCore.rw.git
+cd recruitment.brightCore.rw
+```
+
+Or, if your GitHub SSH key is configured:
+
+```bash
+git clone git@github.com:shumbushojeanbaptiste/recruitment.brightCore.rw.git
+cd recruitment.brightCore.rw
+```
+
+On Windows, run the clone commands in PowerShell, Git Bash, or a WSL terminal.
+
+## 2. Create the production environment file
+
+Copy the example configuration. The production Compose setup expects the file
+to be named `.env.production`.
 
 PowerShell:
+
 ```powershell
-Copy-Item .env.example .env
+Copy-Item .env.production.example .env.production
 ```
 
-Linux/macOS:
+Linux, macOS, Git Bash, or WSL:
+
 ```bash
-cp .env.example .env
+cp .env.production.example .env.production
 ```
 
-For local development, the sample credentials are development-only. Change them before deployment.
+Generate two different secrets. Use the first output for
+`POSTGRES_PASSWORD` and the second for `JWT_SECRET_KEY`.
 
-## 2. Start PostgreSQL and Redis
+PowerShell (run each command and copy its output):
+
+```powershell
+py -3.12 -c "import secrets; print(secrets.token_hex(32))"
+py -3.12 -c "import secrets; print(secrets.token_urlsafe(48))"
+```
+
+Linux, macOS, Git Bash, or WSL:
+
 ```bash
-docker compose up -d postgres redis
-docker compose ps
+openssl rand -hex 32
+python3 -c 'import secrets; print(secrets.token_urlsafe(48))'
 ```
 
-## 3. Create a Python environment
+Edit `.env.production` and replace the placeholder values for
+`POSTGRES_PASSWORD` and `JWT_SECRET_KEY` with the generated outputs. Keep
+`POSTGRES_DB`, `POSTGRES_USER`, and the other example settings unless you have a
+reason to change them.
+
 PowerShell:
+
+```powershell
+notepad .env.production
+```
+
+Linux, macOS, Git Bash, or WSL:
+
+```bash
+${EDITOR:-nano} .env.production
+```
+
+Do not commit `.env.production`, share the secrets, or use these local
+credentials for a public deployment. The file is excluded from Git.
+
+## 3. Prepare Python for the startup script
+
+The startup script runs `pytest` on your computer before building and starting
+the containers. Create a virtual environment and install the Python
+requirements so the test command is available.
+
+PowerShell:
+
 ```powershell
 py -3.12 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pip install --upgrade pip
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
-Linux/macOS:
+Linux, macOS, Git Bash, or WSL:
+
 ```bash
-python3.12 -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
-## 4. Run the API
+If Python 3.12 is not your default on Windows, use the `py -3.12` launcher as
+shown. In a Linux or macOS environment, use a Python 3.12+ installation.
+
+## 4. Start the application
+
+The script must run in Bash, not directly as a PowerShell script. On Windows,
+open Git Bash or WSL in the cloned repository. You can also run it from
+PowerShell if Git Bash is installed and `bash` is available on `PATH`.
+
+Git Bash or WSL on Windows:
+
 ```bash
-uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+bash ./auto_start.sh
 ```
 
-Interactive API docs: http://127.0.0.1:8000/docs
+Linux or macOS:
 
-## 5. Test with Postman
-Import both:
-- `postman/BrightCore_Step01_Health.postman_collection.json`
-- `postman/BrightCore_Local.postman_environment.json`
-
-Select the `BrightCore Local` environment and run the requests in order:
-1. API Root
-2. Liveness
-3. Readiness
-
-Expected responses:
-- Root: HTTP 200
-- Liveness: HTTP 200
-- Readiness: HTTP 200 when PostgreSQL and Redis are reachable; otherwise HTTP 503
-
-## Notes
-- `/health/live` checks that the process is alive.
-- `/health/ready` checks PostgreSQL and Redis connectivity.
-- Business and authentication endpoints are documented in subsequent steps.
-- Do not commit `.env` or real secrets to Git.
-
-## Step 2: Create and apply the users migration
-
-### 2.7: Configure Alembic
-
-Alembic is already listed in `requirements.txt`:
-```text
-alembic>=1.13,<2.0
-```
-
-Install the project requirements:
 ```bash
-pip install -r requirements.txt
+bash ./auto_start.sh
 ```
 
-Alembic is already initialized in this project. If setting up a fresh copy that does not have an `alembic` directory or `alembic.ini`, initialize it with:
+The script runs the tests, validates the production Compose configuration,
+downloads required images, builds the API and frontend, starts PostgreSQL and
+Redis, applies database migrations, starts the API and web app, and imports
+the sample recruitment data. The initial image download and build can take
+several minutes.
+
+When prompted, enter the administrator's full name, email, and a password of
+12–128 characters twice. **There is no hard-coded seeded admin username or
+password.** These are the credentials you create and will use to sign in.
+Running the script again with the same admin email verifies the existing
+administrator rather than creating a duplicate.
+
+When startup finishes, open:
+
+- Web app: [http://localhost/](http://localhost/)
+- API documentation: [http://localhost/docs](http://localhost/docs)
+- API readiness check: [http://localhost/health/ready](http://localhost/health/ready)
+
+The readiness endpoint should return HTTP 200 when the API can reach its
+database and Redis. If startup fails, review the error printed by the script
+and the service logs:
+
 ```bash
-alembic init alembic
+docker compose --env-file .env.production -f docker-compose.prod.yml ps
+docker compose --env-file .env.production -f docker-compose.prod.yml logs --tail 100
 ```
 
-In the existing `alembic.ini`, set the `sqlalchemy.url` fallback to:
-```ini
-sqlalchemy.url = postgresql+psycopg://brightcore:brightcore_dev_only@localhost:5432/brightcore
-```
+If port 80 is already in use, stop the application using that port and rerun
+the startup script.
 
-The migration environment reads the actual database URL from the application configuration, so this `alembic.ini` value is only a fallback.
+## Stop and restart
 
-Generate a migration from the SQLAlchemy models:
+To stop the containers without deleting the database, Redis data, or uploaded
+files:
+
 ```bash
-alembic revision --autogenerate -m "create users table"
+docker compose --env-file .env.production -f docker-compose.prod.yml down
 ```
 
-Alembic creates a revision file in `alembic/versions/`. Open and review the generated migration before applying it. Verify that it creates the `users` table with a UUID primary key, a unique email constraint, the role check constraint, and the `created_at` and `updated_at` timestamps.
+To start the existing containers again:
 
-Autogeneration compares model metadata with the current database; it does not guarantee that every intended schema change is correct. Review and adjust the migration as needed.
-
-Apply the reviewed migration:
 ```bash
-alembic upgrade head
+docker compose --env-file .env.production -f docker-compose.prod.yml up -d
 ```
 
-Check the current migration state and revision history:
-```bash
-alembic current
-alembic history
-```
+The startup script can also be run again; it reruns tests and startup steps.
+The sample SQL uses conflict handling for its job records.
 
-## Step 3: Configure and verify authentication
+## Technology choices
 
-### 2. Add authentication configuration
+- **React, TypeScript, and Vite** provide a component-based frontend with
+  compile-time type checking and a fast development/build workflow.
+- **FastAPI and Python** provide the API, request validation, and generated
+  interactive API documentation.
+- **PostgreSQL** stores persistent application data, with **SQLAlchemy** for
+  database access and **Alembic** for versioned schema migrations.
+- **Redis** is included as the application’s supporting in-memory data
+  service.
+- **Docker Compose** starts the frontend, API, database, and Redis together,
+  reducing local setup differences between operating systems.
+- **Nginx** serves as the public entry point and routes requests to the
+  frontend and API.
 
-Generate a strong signing secret:
-```bash
-python -c "import secrets; print(secrets.token_urlsafe(48))"
-```
+## Assumptions
 
-Add the generated secret and JWT settings to your local `.env` file:
-```dotenv
-JWT_SECRET_KEY=replace-with-a-generated-secret
-JWT_ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-```
+- Docker is available and allowed to download the project’s container images.
+- The computer has an available local port 80.
+- The supplied example environment settings are suitable only for local
+  evaluation. Anyone deploying the app publicly must supply their own secrets
+  and review the deployment configuration.
+- The administrator is created interactively during startup; there are no
+  shared/default admin credentials.
+- The SQL in `data/default.sql` provides sample application data and is
+  imported after the administrator is created or verified.
 
-Do not use the example value as a production secret or commit your `.env` file.
+## Security and data
 
-### Create the administrator
-
-After applying the database migration, run:
-```bash
-python -m app.cli.seed_admin
-```
-
-Enter the administrator's name, email, and a strong password when prompted. Use those credentials for the admin requests in the Postman collection.
-
-### Verify authentication with Postman
-
-Import `postman/BrightCore_Step03_Authentication.postman_collection.json` and run all eight requests in order. The collection checks candidate registration and login, protected identity, missing-token and invalid-credential rejection, duplicate registration, and seeded administrator login and identity.
-
-After all eight Postman requests pass, commit the changes:
-```bash
-git status
-git add app requirements.txt .env.example postman
-git commit -m "feat: implement JWT authentication and admin seeding"
-```
-
-## Production startup and default data
-
-Run `auto_start.sh` to test the project, apply database migrations, and start
-the production services. After you create or verify the administrator account,
-the script imports `data/default.sql` into PostgreSQL using `psql`. The SQL
-uses `ON CONFLICT` to update matching job IDs, so rerunning startup is safe.
-Seed job rows are associated with an existing administrator account.
-
-## API response format and observability
-
-Business endpoints under `/api/v1` return successful JSON responses in this
-shape:
-```json
-{
-  "success": true,
-  "data": {},
-  "meta": {
-    "request_id": "request-uuid"
-  }
-}
-```
-
-Errors use `success: false` and include an error `code`, human-readable
-`message`, optional `details`, and the same request ID in `meta`. The request ID
-is also returned in the `X-Request-ID` response header. Health endpoints,
-Prometheus output, and file downloads keep their native response formats.
-
-The API exposes Prometheus metrics at `GET /metrics`. In production, scrape
-`api:8000/metrics` from a Prometheus instance attached to the Compose backend
-network; the public Nginx endpoint intentionally blocks `/metrics`. Grafana can
-use that Prometheus instance as a data source. Available metrics include
-`brightcore_http_requests_total` and
-`brightcore_http_request_duration_seconds`; labels use the route template, HTTP
-method, and status code to avoid per-request path cardinality.
-
-Application logs are emitted as one JSON object per line to stdout, including
-request ID, route, status, and duration for HTTP requests. A Filebeat or other
-container log collector can ingest these JSON lines into Elasticsearch/Logstash
-for Kibana search and dashboards. Request bodies, credentials, and query
-strings are not included in request logs.
+The application stores the PostgreSQL database, Redis data, and uploaded files
+in Docker-managed volumes. `docker compose down` preserves those volumes. Do
+not add `-v` unless you intentionally want to delete the persisted data.
+Never commit `.env.production`, real credentials, or private uploaded files.

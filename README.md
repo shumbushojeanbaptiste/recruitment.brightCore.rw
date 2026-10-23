@@ -94,7 +94,9 @@ credentials for a public deployment. The file is excluded from Git.
 
 The startup script runs `pytest` on your computer before building and starting
 the containers. Create a virtual environment and install the Python
-requirements so the test command is available.
+requirements so the test command is available. The tests use an isolated
+SQLite database and a fake Redis client, and provide test-only settings during
+startup, so no local `.env` file or running database/Redis services are needed.
 
 PowerShell:
 
